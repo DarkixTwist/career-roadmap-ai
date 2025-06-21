@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Career Roadmap Generator</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+    textarea { width: 100%; height: 100px; }
+    button { margin-top: 10px; }
+    #response { white-space: pre-wrap; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h2>Career Roadmap AI Assistant</h2>
+  <p>Enter your interest (e.g., "medical field"):</p>
+  <textarea id="message"></textarea><br>
+  <button onclick="sendMessage()">Generate Roadmap</button>
+
+  <div id="response"></div>
+
+  <script>
+    async function sendMessage() {
+      const message = document.getElementById("message").value;
+      const resEl = document.getElementById("response");
+      resEl.textContent = "⏳ Generating roadmap...";
+
+      try {
+        const res = await fetch("https://career-roadmap-backend.vercel.app/api/poe", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "poe-access-key": "jrpyg8WQqGa0EZbakaVSbjD3SZkn15U3"
+          },
+          body: JSON.stringify({ message })
+        });
+
+        if (!res.ok) {
+          resEl.textContent = "❌ Error: " + await res.text();
+          return;
+        }
+
+        const data = await res.json();
+        resEl.textContent = data.message.text;
+      } catch (err) {
+        resEl.textContent = "❌ Failed to fetch: " + err.message;
+      }
+    }
+  </script>
+</body>
+</html>
