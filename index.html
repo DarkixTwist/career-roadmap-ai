@@ -2,200 +2,206 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>AI Career Assistant</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Career Chatbot</title>
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #f4f4f4;
-      color: #222;
-      transition: background-color 0.3s, color 0.3s;
+    :root {
+      --bg: #ffffff;
+      --bot-bg: #e6f2ff;
+      --user-bg: #d1ffd6;
+      --text: #000000;
+      --bot-text: #1a73e8;
+      --user-text: #1e8c3f;
     }
+
     .dark {
-      background-color: #121212;
-      color: #eee;
+      --bg: #121212;
+      --bot-bg: #1d2b3a;
+      --user-bg: #223322;
+      --text: #ffffff;
+      --bot-text: #90caf9;
+      --user-text: #a5d6a7;
     }
-    .container {
-      max-width: 700px;
-      margin: auto;
-      padding: 20px;
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
     }
-    textarea {
-      width: 100%;
-      height: 80px;
+
+    header {
+      padding: 12px;
+      background-color: var(--bot-bg);
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    .chat-container {
+      flex: 1;
       padding: 10px;
-      font-size: 1em;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      resize: vertical;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
     }
-    button {
-      margin-top: 10px;
-      padding: 10px 20px;
-      font-size: 1em;
-      background-color: #0066ff;
-      color: white;
+
+    .msg {
+      padding: 10px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      max-width: 80%;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+
+    .msg.user {
+      background-color: var(--user-bg);
+      color: var(--user-text);
+      align-self: flex-end;
+    }
+
+    .msg.bot {
+      background-color: var(--bot-bg);
+      color: var(--bot-text);
+      align-self: flex-start;
+    }
+
+    .input-bar {
+      display: flex;
+      padding: 10px;
+      border-top: 1px solid #ccc;
+      background-color: var(--bg);
+    }
+
+    .input-bar input {
+      flex: 1;
+      padding: 8px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+    }
+
+    .input-bar button {
+      margin-left: 10px;
+      padding: 8px 16px;
       border: none;
-      border-radius: 8px;
+      border-radius: 20px;
+      background-color: #1a73e8;
+      color: white;
       cursor: pointer;
     }
-    button:hover {
-      background-color: #004acc;
+
+    .footer-bar {
+      text-align: center;
+      padding: 5px;
+      font-size: 12px;
+      color: #777;
     }
-    .chat-box {
-      margin-top: 20px;
-      background: rgba(255, 255, 255, 0.7);
-      border-radius: 8px;
-      padding: 10px;
-      max-height: 400px;
-      overflow-y: auto;
+
+    .settings {
+      position: absolute;
+      top: 10px;
+      right: 10px;
     }
-    .msg {
-      margin-bottom: 10px;
-    }
-    .user { font-weight: bold; color: #007aff; }
-    .bot { font-weight: bold; color: #0b875b; }
-    .toggle-container {
-      text-align: right;
-      margin-bottom: 10px;
-    }
-    .btn-clear {
-      background-color: #ff4d4d;
-      float: right;
-      margin-left: 10px;
-    }
-    .btn-clear:hover {
-      background-color: #cc0000;
+
+    .settings button {
+      margin-left: 6px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="toggle-container">
-      <label>
-        🌞 <input type="checkbox" id="themeToggle" /> 🌙
-        <button class="btn-clear" onclick="clearChat()">🗑 Clear Chat</button>
-      </label>
-    </div>
+  <header>🎓 Career Chatbot</header>
 
-    <h2>🎓 AI Career Roadmap Assistant</h2>
-    <p>Enter your career interest (e.g., "medical field"):</p>
-    <textarea id="message" placeholder="Type your interest..."></textarea><br>
-    <button onclick="sendMessage()">Generate Roadmap</button>
-
-    <div class="chat-box" id="chatBox"></div>
+  <div class="settings">
+    <button onclick="toggleTheme()">🌗</button>
+    <button onclick="clearChat()">🗑️</button>
   </div>
 
+  <div class="chat-container" id="chatBox"></div>
+
+  <div class="input-bar">
+    <input type="text" id="msgInput" placeholder="Ask your career question..." />
+    <button onclick="sendMsg()">Send</button>
+  </div>
+
+  <div class="footer-bar">Built with ❤️ for Students</div>
+
   <script>
-    const API_URL = "https://career-roadmap-backend.vercel.app/api/poe"; // ✅ Replace with your Vercel API URL
-    const ACCESS_KEY = "jrpyg8WQqGa0EZbakaVSbjD3SZkn15U3"; // ✅ Replace with your Poe access key
-
     const chatBox = document.getElementById("chatBox");
-    const STORAGE_KEY = "careerChatHistory";
+    const input = document.getElementById("msgInput");
+    const API_URL = "https://career-roadmap-backend.vercel.app/api/poe"; // Replace with your actual URL
+    const POE_KEY = "jrpyg8WQqGa0EZbakaVSbjD3SZkn15U3";
 
-    // Load saved chat from localStorage
-    function loadChatHistory() {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const messages = JSON.parse(saved);
-        messages.forEach(m => addMessage(m.sender, m.text, false));
-      }
-    }
+    // Load from LocalStorage
+    const savedTheme = localStorage.getItem("theme") || "light";
+    const savedChat = JSON.parse(localStorage.getItem("chatHistory") || "[]");
 
-    // Save message to localStorage
-    function saveMessage(sender, text) {
-      const current = localStorage.getItem(STORAGE_KEY);
-      const messages = current ? JSON.parse(current) : [];
-      messages.push({ sender, text });
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
-    }
+    if (savedTheme === "dark") document.body.classList.add("dark");
+    savedChat.forEach(m => addMsg(m.sender, m.text, false));
 
-    // Add message to DOM
-    function addMessage(sender, text, save = true) {
-      const div = document.createElement("div");
-      div.className = "msg";
-      div.innerHTML = `<span class="${sender}">${sender}:</span> ${text}`;
-      chatBox.appendChild(div);
+    function addMsg(sender, text, save = true) {
+      const msg = document.createElement("div");
+      msg.className = `msg ${sender}`;
+      msg.textContent = text;
+      chatBox.appendChild(msg);
       chatBox.scrollTop = chatBox.scrollHeight;
-      if (save) saveMessage(sender, text);
-    }
 
-    // Typing animation
-    async function simulateTyping(text) {
-      let display = "";
-      for (let i = 0; i < text.length; i++) {
-        display += text[i];
-        chatBox.lastChild.innerHTML = `<span class="bot">bot:</span> ${display}_`;
-        await new Promise(r => setTimeout(r, 15)); // speed adjust here
+      if (save) {
+        const history = JSON.parse(localStorage.getItem("chatHistory") || "[]");
+        history.push({ sender, text });
+        localStorage.setItem("chatHistory", JSON.stringify(history));
       }
-      chatBox.lastChild.innerHTML = `<span class="bot">bot:</span> ${display}`;
     }
 
-    async function sendMessage() {
-      const input = document.getElementById("message");
-      const userMessage = input.value.trim();
-      if (!userMessage) return;
-
-      addMessage("user", userMessage);
+    function sendMsg() {
+      const text = input.value.trim();
+      if (!text) return;
+      addMsg("user", text);
       input.value = "";
 
-      const typingDiv = document.createElement("div");
-      typingDiv.className = "msg";
-      typingDiv.innerHTML = `<span class="bot">bot:</span> ⏳ Typing...`;
-      chatBox.appendChild(typingDiv);
+      // Typing animation
+      const loading = document.createElement("div");
+      loading.className = "msg bot";
+      loading.textContent = "Typing...";
+      chatBox.appendChild(loading);
       chatBox.scrollTop = chatBox.scrollHeight;
 
-      try {
-        const res = await fetch(API_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "poe-access-key": ACCESS_KEY
-          },
-          body: JSON.stringify({ message: userMessage })
-        });
-
-        const data = await res.json();
-        chatBox.lastChild.remove();
-        const botDiv = document.createElement("div");
-        botDiv.className = "msg";
-        botDiv.innerHTML = `<span class="bot">bot:</span> `;
-        chatBox.appendChild(botDiv);
-        chatBox.scrollTop = chatBox.scrollHeight;
-        saveMessage("bot", data.message.text);
-        await simulateTyping(data.message.text);
-      } catch (e) {
-        chatBox.lastChild.remove();
-        addMessage("bot", "❌ Failed to fetch: " + e.message);
-      }
+      fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "poe-access-key": POE_KEY
+        },
+        body: JSON.stringify({ message: text })
+      })
+      .then(res => res.json())
+      .then(data => {
+        chatBox.removeChild(loading);
+        addMsg("bot", data.message.text);
+      })
+      .catch(err => {
+        chatBox.removeChild(loading);
+        addMsg("bot", "❌ Failed to respond. Try again.");
+      });
     }
 
-    // Theme toggle
-    const themeToggle = document.getElementById("themeToggle");
-    themeToggle.addEventListener("change", () => {
-      const dark = themeToggle.checked;
-      document.body.classList.toggle("dark", dark);
-      localStorage.setItem("theme", dark ? "dark" : "light");
-    });
-
-    // Load theme
-    function loadTheme() {
-      const theme = localStorage.getItem("theme");
-      if (theme === "dark") {
-        document.body.classList.add("dark");
-        themeToggle.checked = true;
-      }
+    function toggleTheme() {
+      document.body.classList.toggle("dark");
+      localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light");
     }
 
-    // Clear chat history
     function clearChat() {
-      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem("chatHistory");
       chatBox.innerHTML = "";
     }
 
-    window.onload = () => {
-      loadTheme();
-      loadChatHistory();
-    };
+    // Send on Enter
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter") sendMsg();
+    });
   </script>
 </body>
 </html>
