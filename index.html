@@ -1,49 +1,201 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Career Roadmap Generator</title>
+  <meta charset="UTF-8" />
+  <title>AI Career Assistant</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
-    textarea { width: 100%; height: 100px; }
-    button { margin-top: 10px; }
-    #response { white-space: pre-wrap; margin-top: 20px; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f4f4;
+      color: #222;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .dark {
+      background-color: #121212;
+      color: #eee;
+    }
+    .container {
+      max-width: 700px;
+      margin: auto;
+      padding: 20px;
+    }
+    textarea {
+      width: 100%;
+      height: 80px;
+      padding: 10px;
+      font-size: 1em;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      resize: vertical;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 1em;
+      background-color: #0066ff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #004acc;
+    }
+    .chat-box {
+      margin-top: 20px;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 8px;
+      padding: 10px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .msg {
+      margin-bottom: 10px;
+    }
+    .user { font-weight: bold; color: #007aff; }
+    .bot { font-weight: bold; color: #0b875b; }
+    .toggle-container {
+      text-align: right;
+      margin-bottom: 10px;
+    }
+    .btn-clear {
+      background-color: #ff4d4d;
+      float: right;
+      margin-left: 10px;
+    }
+    .btn-clear:hover {
+      background-color: #cc0000;
+    }
   </style>
 </head>
 <body>
-  <h2>Career Roadmap AI Assistant</h2>
-  <p>Enter your interest (e.g., "medical field"):</p>
-  <textarea id="message"></textarea><br>
-  <button onclick="sendMessage()">Generate Roadmap</button>
+  <div class="container">
+    <div class="toggle-container">
+      <label>
+        🌞 <input type="checkbox" id="themeToggle" /> 🌙
+        <button class="btn-clear" onclick="clearChat()">🗑 Clear Chat</button>
+      </label>
+    </div>
 
-  <div id="response"></div>
+    <h2>🎓 AI Career Roadmap Assistant</h2>
+    <p>Enter your career interest (e.g., "medical field"):</p>
+    <textarea id="message" placeholder="Type your interest..."></textarea><br>
+    <button onclick="sendMessage()">Generate Roadmap</button>
+
+    <div class="chat-box" id="chatBox"></div>
+  </div>
 
   <script>
+    const API_URL = "https://<your-vercel-project>.vercel.app/api/poe"; // ✅ Replace with your Vercel API URL
+    const ACCESS_KEY = "your-32-char-poe-access-key"; // ✅ Replace with your Poe access key
+
+    const chatBox = document.getElementById("chatBox");
+    const STORAGE_KEY = "careerChatHistory";
+
+    // Load saved chat from localStorage
+    function loadChatHistory() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const messages = JSON.parse(saved);
+        messages.forEach(m => addMessage(m.sender, m.text, false));
+      }
+    }
+
+    // Save message to localStorage
+    function saveMessage(sender, text) {
+      const current = localStorage.getItem(STORAGE_KEY);
+      const messages = current ? JSON.parse(current) : [];
+      messages.push({ sender, text });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    }
+
+    // Add message to DOM
+    function addMessage(sender, text, save = true) {
+      const div = document.createElement("div");
+      div.className = "msg";
+      div.innerHTML = `<span class="${sender}">${sender}:</span> ${text}`;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+      if (save) saveMessage(sender, text);
+    }
+
+    // Typing animation
+    async function simulateTyping(text) {
+      let display = "";
+      for (let i = 0; i < text.length; i++) {
+        display += text[i];
+        chatBox.lastChild.innerHTML = `<span class="bot">bot:</span> ${display}_`;
+        await new Promise(r => setTimeout(r, 15)); // speed adjust here
+      }
+      chatBox.lastChild.innerHTML = `<span class="bot">bot:</span> ${display}`;
+    }
+
     async function sendMessage() {
-      const message = document.getElementById("message").value;
-      const resEl = document.getElementById("response");
-      resEl.textContent = "⏳ Generating roadmap...";
+      const input = document.getElementById("message");
+      const userMessage = input.value.trim();
+      if (!userMessage) return;
+
+      addMessage("user", userMessage);
+      input.value = "";
+
+      const typingDiv = document.createElement("div");
+      typingDiv.className = "msg";
+      typingDiv.innerHTML = `<span class="bot">bot:</span> ⏳ Typing...`;
+      chatBox.appendChild(typingDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
 
       try {
-        const res = await fetch("https://career-roadmap-backend.vercel.app/api/poe", {
+        const res = await fetch(API_URL, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "poe-access-key": "jrpyg8WQqGa0EZbakaVSbjD3SZkn15U3"
+            "poe-access-key": ACCESS_KEY
           },
-          body: JSON.stringify({ message })
+          body: JSON.stringify({ message: userMessage })
         });
 
-        if (!res.ok) {
-          resEl.textContent = "❌ Error: " + await res.text();
-          return;
-        }
-
         const data = await res.json();
-        resEl.textContent = data.message.text;
-      } catch (err) {
-        resEl.textContent = "❌ Failed to fetch: " + err.message;
+        chatBox.lastChild.remove();
+        const botDiv = document.createElement("div");
+        botDiv.className = "msg";
+        botDiv.innerHTML = `<span class="bot">bot:</span> `;
+        chatBox.appendChild(botDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+        saveMessage("bot", data.message.text);
+        await simulateTyping(data.message.text);
+      } catch (e) {
+        chatBox.lastChild.remove();
+        addMessage("bot", "❌ Failed to fetch: " + e.message);
       }
     }
+
+    // Theme toggle
+    const themeToggle = document.getElementById("themeToggle");
+    themeToggle.addEventListener("change", () => {
+      const dark = themeToggle.checked;
+      document.body.classList.toggle("dark", dark);
+      localStorage.setItem("theme", dark ? "dark" : "light");
+    });
+
+    // Load theme
+    function loadTheme() {
+      const theme = localStorage.getItem("theme");
+      if (theme === "dark") {
+        document.body.classList.add("dark");
+        themeToggle.checked = true;
+      }
+    }
+
+    // Clear chat history
+    function clearChat() {
+      localStorage.removeItem(STORAGE_KEY);
+      chatBox.innerHTML = "";
+    }
+
+    window.onload = () => {
+      loadTheme();
+      loadChatHistory();
+    };
   </script>
 </body>
 </html>
